@@ -1,0 +1,90 @@
+# Verifica a compactação de arquivos
+<IfModule mod_deflate.c>
+  # A regra abaixo compacta arquivos do tipo html, text, css e javascript
+   AddOutputFilterByType DEFLATE text/html text/plain text/css application/x-javascript application/x-font-woff application/font-woff
+</IfModule>
+
+# BEGIN Expire headers
+<IfModule mod_expires.c>
+   ExpiresActive On
+   ExpiresByType text/javascript "access plus 864000 seconds"
+   ExpiresByType application/x-javascript "access plus 864000 seconds"
+</IfModule>
+# END Expire headers
+
+# BEGIN Cache-Control Headers
+<IfModule mod_headers.c>
+	<FilesMatch "\.(css)$">
+	   Header set Cache-Control "max-age=864000, public"
+	</FilesMatch>
+	<FilesMatch "\.(js)$">
+	   Header set Cache-Control "max-age=864000, private"
+	</FilesMatch>
+	<FilesMatch "\.(ttf|ttc|otf|eot|woff|font.css|css|svg)(.*)">
+    	Header set Access-Control-Allow-Origin "*"
+	</FilesMatch>
+
+	# Secutiry: Content Security Policy
+    Header set Content-Security-Policy "default-src 'none';  \
+    font-src 'self' fonts.gstatic.com *.bootstrapcdn.com cdnjs.cloudflare.com; \
+    style-src 'unsafe-inline' 'self' *.disquscdn.com code.jquery.com fonts.googleapis.com *.bootstrapcdn.com cdnjs.cloudflare.com cdn.datatables.net; \
+    connect-src 'self' cdnjs.cloudflare.com *.addthis.com *.hotjar.com sentry.io cdn.datatables.net; \
+    child-src 'self' *.google.com rpm.newrelic.com *.addthis.com *.hotjar.com *; \
+    img-src data: 'self' *.disquscdn.com *.disqus.com cdn.rawgit.com raw.githubusercontent.com browser-update.org i.vimeocdn.com *.google.com.br *.google.com maps.googleapis.com *.gstatic.com *.twimg.com  *.google-analytics.com *.doubleclick.net t.co; \
+    frame-ancestors 'self' *.hotjar.com; \
+    object-src 'unsafe-inline' 'self'; \
+    script-src 'unsafe-eval' 'unsafe-inline' 'self' ajax.cloudflare.com *.disquscdn.com *.disqus.com disqus.com cdnjs.cloudflare.com browser-update.org code.jquery.com *.google-analytics.com *.googleapis.com *.google.com *.gstatic.com www.googletagmanager.com cdnjs.cloudflare.com *.ravenjs.com *.addthis.com  *.bootstrapcdn.com *.hotjar.com *.crazyegg.com *.newrelic.com *.nr-data.net cdn.datatables.net;"
+
+    #Header always set X-Frame-Options "DENY"
+    Header always set Strict-Transport-Security "max-age=63072000; includeSubdomains;"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set X-Frame-Options "SAMEORIGIN"
+</IfModule>
+# END Cache-Control Headers
+
+# bloqueio de bots
+SetEnvIfNoCase User-Agent "^libwww-perl*" block_bad_bots
+Deny from env=block_bad_bots
+
+AddDefaultCharset utf-8
+
+#ONLY NEEDED IF NOT FPM
+#php_flag allow_url_fopen on
+#php_value intl.default_locale "pt_BR"
+#php_value date.timezone "America/Sao_Paulo"
+#php_value post_max_size 100M
+#php_value upload_max_filesize 100M
+
+<IfModule mod_mime.c>
+	AddType video/mp4 .mp4 .m4v
+	AddType video/ogg .ogv
+	AddType video/webm .webm
+</IfModule>
+
+RewriteEngine On
+
+# DO NOT REMOVE THIS LINE AND THE LINES BELOW SSL_REDIRECT:SSL_REDIRECT
+#RewriteCond %{HTTPS} off
+#RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# DO NOT REMOVE THIS LINE AND THE LINES ABOVE SSL_REDIRECT:SSL_REDIRECT
+
+RewriteCond %{REQUEST_URI} ^/index\.htm [NC]
+RewriteRule ^.*$ - [NC,L]
+
+# The following rule tells Apache that if the requested filename
+# exists, simply serve it.
+RewriteCond %{REQUEST_FILENAME} -s [OR]
+RewriteCond %{REQUEST_FILENAME} -l [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^.*$ - [NC,L]
+
+# The following rewrites all other queries to index.php. The
+# condition ensures that if you are using Apache aliases to do
+# mass virtual hosting, the base path will be prepended to
+# allow proper resolution of the index.php file; it will work
+# in non-aliased environments as well, providing a safe, one-size
+# fits all solution.
+RewriteCond %{REQUEST_URI}::$1 ^(/.+)(.+)::\2$
+RewriteRule ^(.*) - [E=BASE:%1]
+RewriteRule ^(.*)$ %{ENV:BASE}index.php [NC,L]
