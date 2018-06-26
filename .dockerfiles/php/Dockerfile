@@ -8,8 +8,10 @@ ARG USER
 RUN apk add --update --no-cache \
         alpine-sdk autoconf curl curl-dev freetds-dev \
         libxml2-dev jpeg-dev openldap-dev libmcrypt-dev \
-        libpng-dev libxslt-dev postgresql-dev \
+        libpng-dev libxslt-dev postgresql-dev icu-dev \
     && rm /var/cache/apk/*
+
+RUN docker-php-ext-configure intl && docker-php-ext-install intl
 RUN docker-php-ext-configure ldap --with-ldap=/usr
 RUN docker-php-ext-configure xml --with-libxml-dir=/usr
 RUN docker-php-ext-configure gd --with-jpeg-dir=/usr/include --with-png-dir=/usr/include
